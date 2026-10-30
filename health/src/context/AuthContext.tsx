@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { User, UserRole, LanguageCode } from '../types';
 import { db } from '../services/db/mockDatabase';
 
 interface AuthContextType {
   user: User;
   switchRole: (role: UserRole) => void;
+  signIn: (email: string) => boolean;
   setUserLanguage: (lang: LanguageCode) => void;
   logout: () => void;
   updateConsentSettings: (settings: Partial<NonNullable<User['consentSettings']>>) => void;
@@ -14,10 +15,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(db.currentUser);
-
-  useEffect(() => {
-    setUser(db.currentUser);
-  }, []);
 
   const switchRole = (role: UserRole) => {
     let target = db.users.find(u => u.role === role);
@@ -38,11 +35,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ ...switched });
   };
 
+  const signIn = (email: string): boolean => {
+    const target = db.users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+    if (!target) return false;
+    const switched = db.switchUser(target.id);
+    setUser({ ...switched });
+    return true;
+  };
+
   const setUserLanguage = (lang: LanguageCode) => {
-    user.preferredLanguage = lang;
     db.currentUser.preferredLanguage = lang;
     db.persist();
-    setUser({ ...user, preferredLanguage: lang });
+    setUser(prev => ({ ...prev, preferredLanguage: lang }));
   };
 
   const logout = () => {
@@ -57,12 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, switchRole, setUserLanguage, logout, updateConsentSettings }}>
+    <AuthContext.Provider value={{ user, switchRole, signIn, setUserLanguage, logout, updateConsentSettings }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (!context) {

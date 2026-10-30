@@ -4,7 +4,7 @@ export function testEngagementService() {
   console.log("🧪 Running Unit Test: Inactivity Engagement Engine...");
 
   let promptCount = 0;
-  const service = new ConversationEngagementService(true, 'en', (prompt) => {
+  const service = new ConversationEngagementService(true, 'en', () => {
     promptCount++;
   });
 

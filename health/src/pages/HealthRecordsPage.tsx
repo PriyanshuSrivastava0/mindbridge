@@ -2,15 +2,11 @@ import { useState } from 'react';
 import { 
   TrendingUp, 
   Activity, 
-  Calendar, 
   ArrowUpRight, 
-  CheckCircle2, 
   Moon, 
-  Heart, 
   Sparkles,
   Download,
   ShieldCheck,
-  ChevronRight
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -20,14 +16,12 @@ import {
   YAxis, 
   Tooltip, 
   CartesianGrid,
-  LineChart,
-  Line
 } from 'recharts';
 import { db } from '../services/db/mockDatabase';
 import { useAuth } from '../context/AuthContext';
 import { DailyProgressSnapshot } from '../types';
 
-export function HealthRecordsPage({ navigate }: { navigate: (route: string) => void }) {
+export function HealthRecordsPage() {
   const { user } = useAuth();
   const [history] = useState<DailyProgressSnapshot[]>(db.dailyProgressHistory);
   const [selectedMetric, setSelectedMetric] = useState<'overall' | 'stress' | 'sleep' | 'anxiety'>('overall');
@@ -167,7 +161,7 @@ export function HealthRecordsPage({ navigate }: { navigate: (route: string) => v
             ].map((m) => (
               <button
                 key={m.key}
-                onClick={() => setSelectedMetric(m.key as any)}
+                onClick={() => setSelectedMetric(m.key as 'overall' | 'stress' | 'sleep' | 'anxiety')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   selectedMetric === m.key
                     ? 'bg-white text-[#303F70] shadow-xs'

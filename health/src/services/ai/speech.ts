@@ -54,8 +54,14 @@ export class SpeechService {
       return { stop: () => {} };
     }
 
-    const SpeechRecognition = (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).SpeechRecognition ||
-                              (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+    const SpeechRecognition = (window as unknown as {
+      SpeechRecognition?: any;
+      webkitSpeechRecognition?: any;
+    }).SpeechRecognition ||
+      (window as unknown as {
+        SpeechRecognition?: any;
+        webkitSpeechRecognition?: any;
+      }).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       onError("Voice speech recognition is not supported on this browser.");

@@ -305,7 +305,7 @@ export function calculateScreeningScore(
   }
 
   // Calculate severity
-  let severityLevel: ScreeningResult['severityLevel'] = 'Minimal';
+  let severityLevel: ScreeningResult['severityLevel'];
   if (type === 'PHQ-9') {
     if (totalScore <= 4) severityLevel = 'Minimal';
     else if (totalScore <= 9) severityLevel = 'Mild';

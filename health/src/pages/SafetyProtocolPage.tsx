@@ -1,4 +1,4 @@
-import { ShieldAlert, PhoneCall, CheckCircle2, Lock, HeartHandshake, AlertTriangle } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { CRISIS_RESOURCES } from '../services/ai/safetyTriage';
 
 export function SafetyProtocolPage() {

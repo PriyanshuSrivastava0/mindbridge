@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Send, 
   Mic, 
@@ -7,18 +7,13 @@ import {
   VolumeX, 
   Sparkles, 
   Trash2, 
-  PlusCircle, 
-  Languages, 
   Clock, 
-  HeartHandshake,
   Wind,
   Phone,
   PhoneCall,
   PhoneOff,
   Lock,
-  Unlock,
   CheckCircle2,
-  AlertTriangle,
   Radio
 } from 'lucide-react';
 import { ChatMessage, LanguageCode } from '../../types';
@@ -28,7 +23,6 @@ import { SpeechService } from '../../services/ai/speech';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CrisisModal } from '../common/CrisisModal';
-import confetti from 'canvas-confetti';
 
 interface ChatCompanionProps {
   navigate: (route: string) => void;
@@ -53,10 +47,39 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
   const midConvoTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const messageIdRef = useRef(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const triggerMidConvoNudge = useCallback(() => {
+    let nudgeText: string;
+    if (language === 'hi') {
+      nudgeText = "Main dekh raha hoon ki aap thoda ruk gaye hain. Bilkul koi jaldbazi nahi hai—jab bhi aap taiyar hon, main yahin hoon. Kya aap ek chota sa break lena chahenge ya kuch aur share karna chahenge?";
+    } else if (language === 'hinglish') {
+      nudgeText = "Hey, I noticed you paused for a moment. Bilkul tension mat lo—take all the time you need. I'm right here whenever you want to type, ya hum ek 2-minute calm breathing exercise try kar sakte hain?";
+    } else {
+      nudgeText = "Hey, I noticed you paused for a moment. No rush at all—I'm still right here with you whenever you're ready. Would you like to take your time, or try a 2-minute calming breathing exercise?";
+    }
+
+    const nudgeMsg: ChatMessage = {
+      id: 'nudge-' + Date.now(),
+      conversationId: 'conv-01',
+      sender: 'assistant',
+      content: nudgeText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isMidConvoNudge: true,
+      suggestedInterventions: ['BREATHING', 'GROUNDING']
+    };
+
+    const updated = [...messages, nudgeMsg];
+    setMessages(updated);
+    if (db.conversations[0]) {
+      db.conversations[0].messages = updated;
+      db.persist();
+    }
+  }, [messages, language]);
 
   useEffect(() => {
     scrollToBottom();
@@ -82,46 +105,20 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
     return () => {
       if (midConvoTimerRef.current) clearTimeout(midConvoTimerRef.current);
     };
-  }, [messages, inactivityPromptEnabled, language]);
+  }, [messages, inactivityPromptEnabled, language, triggerMidConvoNudge]);
 
   // Call timer effect
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (isCallingModalOpen && callStatus === 'CONNECTED') {
       interval = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => { if (interval) clearInterval(interval); };
   }, [isCallingModalOpen, callStatus]);
 
-  const triggerMidConvoNudge = () => {
-    let nudgeText = "";
-    if (language === 'hi') {
-      nudgeText = "Main dekh raha hoon ki aap thoda ruk gaye hain. Bilkul koi jaldbazi nahi hai—jab bhi aap taiyar hon, main yahin hoon. Kya aap ek chota sa break lena chahenge ya kuch aur share karna chahenge?";
-    } else if (language === 'hinglish') {
-      nudgeText = "Hey, I noticed you paused for a moment. Bilkul tension mat lo—take all the time you need. I'm right here whenever you want to type, ya hum ek 2-minute calm breathing exercise try kar sakte hain?";
-    } else {
-      nudgeText = "Hey, I noticed you paused for a moment. No rush at all—I'm still right here with you whenever you're ready. Would you like to take your time, or try a 2-minute calming breathing exercise?";
-    }
 
-    const nudgeMsg: ChatMessage = {
-      id: 'nudge-' + Date.now(),
-      conversationId: 'conv-01',
-      sender: 'assistant',
-      content: nudgeText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isMidConvoNudge: true,
-      suggestedInterventions: ['BREATHING', 'GROUNDING']
-    };
-
-    const updated = [...messages, nudgeMsg];
-    setMessages(updated);
-    if (db.conversations[0]) {
-      db.conversations[0].messages = updated;
-      db.persist();
-    }
-  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || inputText).trim();
@@ -130,7 +127,7 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
     if (midConvoTimerRef.current) clearTimeout(midConvoTimerRef.current);
 
     const userMsg: ChatMessage = {
-      id: 'msg-' + Date.now(),
+      id: 'msg-' + ++messageIdRef.current,
       conversationId: 'conv-01',
       sender: 'user',
       content,
@@ -145,7 +142,9 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
     setIsTyping(true);
 
     if (db.conversations[0]) {
+      // eslint-disable-next-line react-hooks/immutability
       db.conversations[0].messages = newHistory;
+      // eslint-disable-next-line react-hooks/immutability
       db.conversations[0].lastInteractionAt = new Date().toISOString();
       db.persist();
     }
@@ -155,7 +154,7 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
       setIsTyping(false);
 
       const aiMsg: ChatMessage = {
-        id: 'msg-ai-' + Date.now(),
+        id: 'msg-ai-' + ++messageIdRef.current,
         conversationId: 'conv-01',
         sender: 'assistant',
         content: response.replyText,
@@ -170,6 +169,7 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
       setMessages(updatedWithAI);
 
       if (db.conversations[0]) {
+        // eslint-disable-next-line react-hooks/immutability
         db.conversations[0].messages = updatedWithAI;
         db.persist();
       }
@@ -190,6 +190,28 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
     } catch (err) {
       console.error("AI Response error:", err);
       setIsTyping(false);
+      const fallback: ChatMessage = {
+        id: 'msg-ai-' + ++messageIdRef.current,
+        conversationId: 'conv-01',
+        sender: 'assistant',
+        content:
+          language === 'hi'
+            ? "Mujhe maaf kijiye, main abhi aapka jawab nahi de paa raha hoon. Kripya thoda der baad phir se koshish karein. Main aapke saath hoon."
+            : language === 'hinglish'
+            ? "Sorry, I'm having trouble replying right now. Please try again in a moment—I'm still here with you."
+            : "I'm sorry, I'm having trouble replying right now. Please try again in a moment—I'm still here with you and I'm listening.",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        language,
+        suggestedInterventions: ['BREATHING', 'MINDFULNESS'],
+        approvedForCounsellor: false
+      };
+      const updatedWithAI = [...newHistory, fallback];
+      setMessages(updatedWithAI);
+      if (db.conversations[0]) {
+        // eslint-disable-next-line react-hooks/immutability
+        db.conversations[0].messages = updatedWithAI;
+        db.persist();
+      }
     }
   };
 
@@ -572,17 +594,23 @@ export function ChatCompanion({ navigate }: ChatCompanionProps) {
                 {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
 
-              <input
-                type="text"
+              <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Share what is on your mind... (English, Hindi, Hinglish)"
-                className="flex-1 text-xs sm:text-sm py-2.5 px-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#303F70]/20 transition-all"
+                rows={1}
+                className="flex-1 text-xs sm:text-sm py-2.5 px-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#303F70]/20 transition-all resize-none max-h-32"
               />
 
               <button
                 type="submit"
-                disabled={!inputText.trim()}
+                disabled={!inputText.trim() || isTyping}
                 className="p-2.5 rounded-2xl bg-[#303F70] hover:bg-[#202b4d] text-white disabled:opacity-40 transition-transform active:scale-95 shadow-sm"
               >
                 <Send className="w-4 h-4" />

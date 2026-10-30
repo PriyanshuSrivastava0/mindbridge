@@ -2,23 +2,16 @@ import { useState } from 'react';
 import { 
   Sparkles, 
   ArrowRight, 
-  ShieldCheck, 
-  HeartHandshake, 
-  Activity, 
-  Compass, 
   Building2, 
-  Lock, 
   CheckCircle2, 
-  MessageSquare, 
   Star,
-  PhoneCall,
   HelpCircle,
-  Play
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 export function LandingPage({ navigate }: { navigate: (route: string) => void }) {
   const { t } = useLanguage();
+  void t;
   const [interactiveChatInput, setInteractiveChatInput] = useState('');
   const [interactiveChatMessages, setInteractiveChatMessages] = useState([
     { sender: 'ai', text: "Hey there. I'm here with you. How has your day been treating you?" }

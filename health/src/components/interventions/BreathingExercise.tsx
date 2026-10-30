@@ -9,7 +9,7 @@ export function BreathingExercise() {
   const [cyclesCompleted, setCyclesCompleted] = useState(0);
 
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     if (isActive) {
       interval = setInterval(() => {
@@ -38,10 +38,10 @@ export function BreathingExercise() {
         });
       }, 1000);
     } else {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     }
 
-    return () => clearInterval(interval);
+    return () => { if (interval) clearInterval(interval); };
   }, [isActive, phase]);
 
   const handleReset = () => {

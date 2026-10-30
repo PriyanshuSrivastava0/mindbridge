@@ -6,10 +6,6 @@ import {
   TrendingUp, 
   Lock, 
   Activity, 
-  CheckCircle2, 
-  AlertTriangle,
-  Eye,
-  FileCheck
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 

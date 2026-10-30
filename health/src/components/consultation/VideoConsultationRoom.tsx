@@ -7,7 +7,6 @@ import {
   PhoneOff, 
   ShieldCheck, 
   FileText, 
-  Sparkles,
   Share2,
   Lock
 } from 'lucide-react';

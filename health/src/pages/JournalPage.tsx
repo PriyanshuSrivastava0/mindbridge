@@ -7,8 +7,7 @@ import {
   Download, 
   Trash2, 
   Search, 
-  ShieldCheck, 
-  CheckCircle2 
+  ShieldCheck,
 } from 'lucide-react';
 import { db } from '../services/db/mockDatabase';
 import { useAuth } from '../context/AuthContext';
@@ -34,7 +33,7 @@ export function JournalPage() {
   const handleSave = () => {
     if (!content.trim()) return;
 
-    const newEntry = db.addJournalEntry({
+    void db.addJournalEntry({
       userId: user.id,
       title: title.trim() || 'Reflection on ' + new Date().toLocaleDateString(),
       content: content.trim(),
@@ -52,6 +51,7 @@ export function JournalPage() {
 
   const handleDelete = (id: string) => {
     if (confirm("Delete this private entry permanently?")) {
+      // eslint-disable-next-line react-hooks/immutability
       db.journalEntries = db.journalEntries.filter(e => e.id !== id);
       db.persist();
       setEntries([...db.journalEntries]);

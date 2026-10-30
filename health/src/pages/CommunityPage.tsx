@@ -3,14 +3,9 @@ import {
   Users, 
   MessageSquare, 
   Heart, 
-  Send, 
-  Sparkles, 
   ShieldCheck, 
-  Filter, 
   Plus, 
   CheckCircle2, 
-  Lock,
-  Tag
 } from 'lucide-react';
 import { db } from '../services/db/mockDatabase';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +13,7 @@ import { CommunityPost } from '../types';
 import confetti from 'canvas-confetti';
 
 export function CommunityPage() {
-  const { user } = useAuth();
+  useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>(db.communityPosts);
   const [selectedCircle, setSelectedCircle] = useState<'ALL' | 'mild-stress' | 'anxiety-panic' | 'burnout' | 'low-mood'>('ALL');
   const [isCreatingPost, setIsCreatingPost] = useState(false);
@@ -117,7 +112,7 @@ export function CommunityPage() {
         {circles.map((c) => (
           <button
             key={c.id}
-            onClick={() => setSelectedCircle(c.id as any)}
+            onClick={() => setSelectedCircle(c.id as 'ALL' | 'mild-stress' | 'anxiety-panic' | 'burnout' | 'low-mood')}
             className={`py-2 px-3.5 rounded-2xl text-xs font-bold transition-all border flex items-center space-x-1.5 ${
               selectedCircle === c.id
                 ? 'bg-[#303F70] text-white border-[#303F70] shadow-xs'
@@ -147,7 +142,7 @@ export function CommunityPage() {
             <label className="text-xs font-bold text-[#20283D] block mb-1">Select Peer Circle:</label>
             <select
               value={newPostCircle}
-              onChange={(e) => setNewPostCircle(e.target.value as any)}
+              onChange={(e) => setNewPostCircle(e.target.value as 'mild-stress' | 'anxiety-panic' | 'burnout' | 'low-mood')}
               className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
             >
               <option value="mild-stress">🌿 Study & Mild Stress Circle (Exam prep, routine balance)</option>

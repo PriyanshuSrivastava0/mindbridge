@@ -1,20 +1,8 @@
-import { 
-  Sparkles, 
-  ShieldCheck, 
-  HeartHandshake, 
-  Activity, 
-  Compass, 
-  Building2, 
-  Lock, 
-  CheckCircle2, 
-  ArrowRight,
-  BookOpen,
-  FileText,
-  HelpCircle
-} from 'lucide-react';
+
+import { CheckCircle2 } from 'lucide-react';
 import { CRISIS_RESOURCES } from '../services/ai/safetyTriage';
 
-export function AboutPage({ navigate }: { navigate: (route: string) => void }) {
+export function AboutPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10 text-[#20283D]">
       <div className="text-center space-y-4">
@@ -48,7 +36,7 @@ export function AboutPage({ navigate }: { navigate: (route: string) => void }) {
   );
 }
 
-export function FeaturesPage({ navigate }: { navigate: (route: string) => void }) {
+export function FeaturesPage() {
   const features = [
     { title: 'Empathetic AI Companion', desc: 'Conversational agent tuned for validation, active listening, and calm presence. Multi-lingual support in English, Hindi, and Hinglish.' },
     { title: 'Clinical-Grade Standardized Screenings', desc: 'Validated PHQ-9, GAD-7, and PSS-10 questionnaires scored according to peer-reviewed clinical rules.' },
@@ -81,7 +69,7 @@ export function FeaturesPage({ navigate }: { navigate: (route: string) => void }
   );
 }
 
-export function HowItWorksPage({ navigate }: { navigate: (route: string) => void }) {
+export function HowItWorksPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       <div className="text-center space-y-4">
@@ -113,7 +101,7 @@ export function HowItWorksPage({ navigate }: { navigate: (route: string) => void
   );
 }
 
-export function InstitutionsPublicPage({ navigate }: { navigate: (route: string) => void }) {
+export function InstitutionsPublicPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       <div className="text-center space-y-4">

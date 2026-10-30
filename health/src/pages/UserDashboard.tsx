@@ -6,10 +6,7 @@ import {
   Compass, 
   ArrowRight, 
   TrendingUp, 
-  ShieldCheck, 
   CheckCircle2, 
-  Plus, 
-  HeartHandshake,
   Video
 } from 'lucide-react';
 import { 
@@ -43,7 +40,7 @@ export function UserDashboard({ navigate }: { navigate: (route: string) => void 
 
   const handleQuickMoodCheckIn = (score: number, emoji: string, label: string) => {
     setSelectedMoodScore(score);
-    const newEntry = db.addMoodEntry({
+    void db.addMoodEntry({
       userId: user.id,
       score,
       label,

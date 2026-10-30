@@ -248,7 +248,7 @@ export function TherapistDirectory({ navigate }: { navigate: (route: string) => 
                         <button
                           key={f.type}
                           type="button"
-                          onClick={() => setConsultType(f.type as any)}
+                          onClick={() => setConsultType(f.type as 'VIDEO' | 'AUDIO' | 'CHAT')}
                           className={`p-3 rounded-xl border text-xs font-bold flex flex-col items-center justify-center space-y-1 transition-all ${
                             consultType === f.type
                               ? 'border-[#303F70] bg-[#303F70]/5 text-[#303F70]'

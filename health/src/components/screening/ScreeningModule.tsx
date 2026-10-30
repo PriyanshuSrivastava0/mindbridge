@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { 
   Activity, 
   HelpCircle, 
-  ShieldAlert, 
   ChevronRight, 
   CheckCircle, 
   RotateCcw, 

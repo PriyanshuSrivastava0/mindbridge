@@ -1,28 +1,16 @@
 import { useState } from 'react';
-import { 
-  ShieldCheck, 
-  Users, 
-  Activity, 
-  Settings, 
-  Lock, 
-  AlertOctagon, 
-  CheckCircle2, 
-  Sliders, 
-  Database,
-  Cpu,
+import {
+  ShieldCheck,
+  Lock,
   Trash2,
   Search,
-  Bell,
-  Eye,
-  UserX,
-  Radio
 } from 'lucide-react';
 import { db } from '../services/db/mockDatabase';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
 export function AdminDashboard() {
-  const { user } = useAuth();
+  useAuth();
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'VERIFICATIONS' | 'USERS' | 'AI_CONFIG' | 'COMMUNITY_MOD' | 'AUDIT'>('OVERVIEW');
   const [therapists, setTherapists] = useState(db.therapists);
   const [usersList, setUsersList] = useState(db.users);
@@ -55,6 +43,7 @@ export function AdminDashboard() {
 
   const handleDeleteCommunityPost = (postId: string) => {
     if (confirm("Remove this post from public community circles?")) {
+      // eslint-disable-next-line react-hooks/immutability
       db.communityPosts = db.communityPosts.filter(p => p.id !== postId);
       db.persist();
       setCommunityPosts([...db.communityPosts]);

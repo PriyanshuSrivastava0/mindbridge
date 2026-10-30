@@ -1,31 +1,26 @@
 import { useState } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  Video, 
-  UserCheck, 
-  FileText, 
-  ShieldCheck, 
-  TrendingUp, 
-  CheckCircle2, 
-  Lock,
-  Unlock,
-  AlertTriangle,
-  ArrowUpRight
+import {
+  Calendar,
+  Clock,
+  Video,
+  ShieldCheck,
+  TrendingUp,
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import { db } from '../services/db/mockDatabase';
 import { useAuth } from '../context/AuthContext';
-import { Appointment, ChatMessage } from '../types';
+import { Appointment } from '../types';
 
 export function TherapistDashboard({ navigate }: { navigate: (route: string) => void }) {
   const { user } = useAuth();
-  const [appointments, setAppointments] = useState<Appointment[]>(db.appointments);
+  const [appointments] = useState<Appointment[]>(db.appointments);
   const [activeTab, setActiveTab] = useState<'APPOINTMENTS' | 'PATIENTS_TRACK' | 'SHARED_MESSAGES' | 'AVAILABILITY'>('APPOINTMENTS');
 
   // Availability state
   const therapistData = db.therapists.find(t => t.name.includes('Patel')) || db.therapists[0];
   const [availableDays, setAvailableDays] = useState<string[]>(therapistData.availableDays);
-  const [availableSlots, setAvailableSlots] = useState<string[]>(therapistData.availableSlots);
+  const [availableSlots] = useState<string[]>(therapistData.availableSlots);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const toggleDay = (day: string) => {
@@ -377,6 +372,7 @@ export function TherapistDashboard({ navigate }: { navigate: (route: string) => 
 
           <div className="pt-4 border-t border-slate-100 flex justify-end">
             <button
+              // eslint-disable-next-line react-hooks/immutability
               onClick={handleSaveAvailability}
               className="px-6 py-2.5 rounded-xl bg-[#303F70] hover:bg-[#202b4d] text-white text-xs font-bold shadow-sm transition-transform active:scale-95"
             >

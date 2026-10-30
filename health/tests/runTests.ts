@@ -22,8 +22,8 @@ async function runAllTests() {
     try {
       t.fn();
       passed++;
-    } catch (e: any) {
-      console.error(`❌ FAILED: ${t.name}:`, e?.message);
+    } catch (e: unknown) {
+      console.error(`❌ FAILED: ${t.name}:`, (e as { message?: string })?.message);
       failed++;
     }
   }

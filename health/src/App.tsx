@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { Navbar } from './components/common/Navbar';
+import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
 import { LandingPage } from './pages/LandingPage';
 import { ChatCompanion } from './components/chat/ChatCompanion';
@@ -18,31 +18,29 @@ import { InstitutionDashboard } from './pages/InstitutionDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { SafetyProtocolPage } from './pages/SafetyProtocolPage';
 import { ConsentPage } from './pages/ConsentPage';
-import { 
-  AboutPage, 
-  FeaturesPage, 
-  HowItWorksPage, 
-  InstitutionsPublicPage, 
-  ResourcesPage, 
-  PrivacyPage, 
-  TermsPage 
+import {
+  AboutPage,
+  FeaturesPage,
+  HowItWorksPage,
+  InstitutionsPublicPage,
+  ResourcesPage,
+  PrivacyPage,
+  TermsPage
 } from './pages/PublicInfoPages';
 import { InterventionsPage } from './pages/InterventionsPage';
 
 export default function App() {
-  const [currentRoute, setCurrentRoute] = useState<string>('/');
+  const [currentRoute, setCurrentRoute] = useState<string>(() => {
+    if (typeof window !== 'undefined') return window.location.pathname || '/';
+    return '/';
+  });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname || '/';
-      setCurrentRoute(path);
-
-      const handlePopState = () => {
-        setCurrentRoute(window.location.pathname || '/');
-      };
-      window.addEventListener('popstate', handlePopState);
-      return () => window.removeEventListener('popstate', handlePopState);
-    }
+    const handlePopState = () => {
+      setCurrentRoute(window.location.pathname || '/');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const navigate = (route: string) => {
@@ -56,11 +54,11 @@ export default function App() {
   const renderCurrentPage = () => {
     if (currentRoute === '/') return <LandingPage navigate={navigate} />;
     if (currentRoute === '/chat') return <ChatCompanion navigate={navigate} />;
-    if (currentRoute === '/health-records') return <HealthRecordsPage navigate={navigate} />;
+    if (currentRoute === '/health-records') return <HealthRecordsPage />;
     if (currentRoute === '/community') return <CommunityPage />;
     if (currentRoute === '/journal' || currentRoute === '/dashboard/journal') return <JournalPage />;
     if (currentRoute === '/screenings') return <ScreeningModule navigate={navigate} />;
-    if (currentRoute === '/interventions') return <InterventionsPage navigate={navigate} />;
+    if (currentRoute === '/interventions') return <InterventionsPage />;
     if (currentRoute === '/therapists') return <TherapistDirectory navigate={navigate} />;
     if (currentRoute === '/dashboard' || currentRoute === '/dashboard/mood') return <UserDashboard navigate={navigate} />;
     if (currentRoute === '/login') return <LoginPage navigate={navigate} />;
@@ -71,29 +69,37 @@ export default function App() {
     }
     if (currentRoute === '/therapist/dashboard') return <TherapistDashboard navigate={navigate} />;
     if (currentRoute === '/institution/dashboard') return <InstitutionDashboard />;
-    if (currentRoute === '/about') return <AboutPage navigate={navigate} />;
-    if (currentRoute === '/features') return <FeaturesPage navigate={navigate} />;
-    if (currentRoute === '/how-it-works') return <HowItWorksPage navigate={navigate} />;
-    if (currentRoute === '/institutions') return <InstitutionsPublicPage navigate={navigate} />;
+    if (currentRoute === '/about') return <AboutPage />;
+    if (currentRoute === '/features') return <FeaturesPage />;
+    if (currentRoute === '/how-it-works') return <HowItWorksPage />;
+    if (currentRoute === '/institutions') return <InstitutionsPublicPage />;
     if (currentRoute === '/resources') return <ResourcesPage />;
     if (currentRoute === '/safety') return <SafetyProtocolPage />;
     if (currentRoute === '/privacy') return <PrivacyPage />;
     if (currentRoute === '/terms') return <TermsPage />;
     if (currentRoute === '/consent') return <ConsentPage />;
 
-    // Default fallback to LandingPage
     return <LandingPage navigate={navigate} />;
   };
+
+  const isLanding = currentRoute === '/';
 
   return (
     <AuthProvider>
       <LanguageProvider>
         <div className="min-h-screen bg-[#F7F9FC] text-[#20283D] flex flex-col font-sans selection:bg-[#A99CE0]/30 selection:text-[#303F70]">
-          <Navbar currentRoute={currentRoute} navigate={navigate} />
-          <main className="flex-1">
-            {renderCurrentPage()}
-          </main>
-          <Footer navigate={navigate} />
+          <div className="bg-[#303F70] text-white py-1.5 px-4 text-center text-[11px] sm:text-xs font-medium z-40">
+            Emergency Crisis Helpline: Tele-MANAS 14416 (India 24/7) | KIRAN 1800-599-0019 | 988 (USA/Canada)
+          </div>
+          <div className="flex flex-1 min-h-0">
+            {!isLanding && <Sidebar currentRoute={currentRoute} navigate={navigate} />}
+            <div className="flex-1 flex flex-col min-w-0">
+              <main className="flex-1">
+                {renderCurrentPage()}
+              </main>
+              <Footer navigate={navigate} />
+            </div>
+          </div>
         </div>
       </LanguageProvider>
     </AuthProvider>

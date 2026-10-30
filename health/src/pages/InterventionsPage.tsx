@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Compass, Wind, Moon, Sparkles, CheckSquare, ArrowRight } from 'lucide-react';
+import { Compass, Wind, Moon, Sparkles } from 'lucide-react';
 import { BreathingExercise } from '../components/interventions/BreathingExercise';
 import { GroundingExercise } from '../components/interventions/GroundingExercise';
-import { WELLNESS_INTERVENTIONS } from '../services/ai/recommendations';
 
-export function InterventionsPage({ navigate }: { navigate: (route: string) => void }) {
+export function InterventionsPage() {
   const [activeTab, setActiveTab] = useState<'BREATHING' | 'GROUNDING' | 'SLEEP' | 'REFRAME'>('BREATHING');
 
   return (
@@ -34,7 +33,7 @@ export function InterventionsPage({ navigate }: { navigate: (route: string) => v
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'BREATHING' | 'GROUNDING' | 'SLEEP' | 'REFRAME')}
                 className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 border ${
                   activeTab === tab.id
                     ? 'bg-[#303F70] text-white border-[#303F70] shadow-sm'

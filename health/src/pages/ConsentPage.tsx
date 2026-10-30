@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { 
   ShieldCheck, 
-  Lock, 
   Download, 
   Trash2, 
   CheckCircle2, 
-  AlertTriangle,
-  FileText
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/db/mockDatabase';
