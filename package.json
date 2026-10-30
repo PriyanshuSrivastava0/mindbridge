@@ -1,0 +1,12 @@
+{
+  "name": "mindbridge-ai-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix health run dev",
+    "build": "npm --prefix health run build",
+    "test": "npm --prefix health test",
+    "seed": "npm --prefix health run seed"
+  }
+}
+

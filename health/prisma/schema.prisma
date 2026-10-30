@@ -1,0 +1,644 @@
+// MindBridge AI - Production Prisma Database Schema
+// PostgreSQL datasource with UUID primary keys, relational constraints, and security indexes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------
+// AUTH & USERS
+// ----------------------------------------------------
+
+enum Role {
+  STUDENT
+  USER
+  THERAPIST
+  INSTITUTION_SAFETY_OFFICER
+  INSTITUTION_ADMIN
+  PLATFORM_ADMIN
+}
+
+enum LanguageCode {
+  en
+  hi
+  hinglish
+}
+
+model User {
+  id                String             @id @default(uuid())
+  email             String             @unique
+  passwordHash      String?
+  name              String
+  role              Role               @default(STUDENT)
+  avatarUrl         String?
+  preferredLanguage LanguageCode       @default(en)
+  isVerified        Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+
+  profile           UserProfile?
+  sessions          Session[]
+  memberships       InstitutionMembership[]
+  consentRecords    ConsentRecord[]
+  trustedContacts   TrustedContact[]
+  conversations     Conversation[]
+  moodEntries       MoodEntry[]
+  journalEntries    JournalEntry[]
+  screeningResults  ScreeningResult[]
+  safetyCases       SafetyCase[]
+  appointments      Appointment[]      @relation("UserAppointments")
+  therapistProfile  TherapistProfile?
+  activityCompletions ActivityCompletion[]
+  subscriptions     Subscription[]
+  deletionRequests  DataDeletionRequest[]
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model UserProfile {
+  id                  String    @id @default(uuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  age                 Int?
+  ageEligibilityConfirmed Boolean @default(false)
+  universityAffiliation String?
+  wellnessGoals       String[]
+  communicationPreferences String[]
+  timezone            String    @default("Asia/Kolkata")
+  updatedAt           DateTime  @updatedAt
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// INSTITUTIONS & MEMBERSHIPS
+// ----------------------------------------------------
+
+model Institution {
+  id                  String                   @id @default(uuid())
+  name                String
+  domain              String                   @unique
+  contactEmail        String
+  licenseTier         String                   @default("ENTERPRISE_STUDENT")
+  kAnonymityThreshold Int                      @default(15)
+  isActive            Boolean                  @default(true)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  memberships         InstitutionMembership[]
+  safetyCases         SafetyCase[]
+
+  @@index([domain])
+}
+
+model InstitutionMembership {
+  id            String      @id @default(uuid())
+  institutionId String
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isSafetyLead  Boolean     @default(false)
+  joinedAt      DateTime    @default(now())
+
+  @@unique([institutionId, userId])
+}
+
+// ----------------------------------------------------
+// CONSENT & TRUSTED EMERGENCY CONTACTS
+// ----------------------------------------------------
+
+model ConsentRecord {
+  id                             String   @id @default(uuid())
+  userId                         String
+  user                           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policyVersion                  String   @default("v2.1-DPDPA-2023")
+  analyticsConsent               Boolean  @default(true)
+  emergencyEscalationConsent     Boolean  @default(false)
+  institutionalAggregatedConsent Boolean  @default(true)
+  aiConversationMemoryConsent    Boolean  @default(true)
+  thirdPartySharingConsent       Boolean  @default(false)
+  ipAddress                      String?
+  timestamp                      DateTime @default(now())
+
+  @@index([userId])
+}
+
+model TrustedContact {
+  id                       String                      @id @default(uuid())
+  userId                   String
+  user                     User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                     String
+  relationship             String
+  phone                    String
+  email                    String
+  isVerified               Boolean                     @default(false)
+  consentGranted           Boolean                     @default(true)
+  canReceiveEmergencyAlerts Boolean                    @default(false)
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+
+  verifications            TrustedContactVerification[]
+  notifications            AlertNotification[]
+
+  @@index([userId])
+}
+
+model TrustedContactVerification {
+  id               String         @id @default(uuid())
+  trustedContactId String
+  trustedContact   TrustedContact @relation(fields: [trustedContactId], references: [id], onDelete: Cascade)
+  verificationCode String
+  channel          String         @default("SMS")
+  isVerified       Boolean        @default(false)
+  verifiedAt       DateTime?
+  expiresAt        DateTime
+
+  @@index([trustedContactId])
+}
+
+// ----------------------------------------------------
+// CONVERSATIONS & CHAT
+// ----------------------------------------------------
+
+model Conversation {
+  id                      String        @id @default(uuid())
+  userId                  String
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                   String        @default("Gentle Reflection")
+  inactivityPromptEnabled Boolean       @default(true)
+  lastInteractionAt       DateTime      @default(now())
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  deletedAt               DateTime?
+
+  messages                ChatMessage[]
+  preferences             ChatPreference?
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id                     String       @id @default(uuid())
+  conversationId         String
+  conversation           Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender                 String       // "user" | "assistant" | "system"
+  content                String
+  isCrisis               Boolean      @default(false)
+  language               LanguageCode @default(en)
+  suggestedInterventions String[]
+  createdAt              DateTime     @default(now())
+
+  riskEvidences          RiskEvidence[]
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+model ChatPreference {
+  id                     String       @id @default(uuid())
+  conversationId         String       @unique
+  conversation           Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  proactivePromptEnabled Boolean      @default(true)
+  quietHoursActive       Boolean      @default(true)
+  preferredTone          String       @default("warm_empathetic")
+}
+
+// ----------------------------------------------------
+// WELLNESS TRACKING & JOURNALING
+// ----------------------------------------------------
+
+model MoodEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score       Int      // 1-5
+  label       String
+  emoji       String
+  energyLevel Int      // 1-10
+  stressLevel Int      // 1-10
+  sleepHours  Float
+  triggers    String[]
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model JournalEntry {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title              String
+  contentEncrypted   String
+  aiReflectionPrompt String?
+  sentiment          String?
+  tags               String[]
+  isEncrypted        Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// SCREENING & STANDARDIZED INSTRUMENTS
+// ----------------------------------------------------
+
+enum ScreeningType {
+  PHQ9
+  GAD7
+  PSS10
+}
+
+model ScreeningResult {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  screeningType ScreeningType
+  totalScore    Int
+  maxScore      Int
+  severityLevel String
+  concernIndex  Int           // 0-100 Experimental Wellness Concern Index
+  confidence    Float         @default(1.0)
+  responsesJson Json
+  explanations  Json
+  completedAt   DateTime      @default(now())
+
+  @@index([userId])
+  @@index([completedAt])
+}
+
+// ----------------------------------------------------
+// SAFETY, RISK ASSESSMENT & HUMAN REVIEW
+// ----------------------------------------------------
+
+enum RiskCategory {
+  HIGH_RISK_IMMEDIATE
+  ELEVATED_CONCERN
+  MODERATE_CONCERN
+  AMBIGUOUS_DISTRESS
+  SAFE
+}
+
+enum SafetyCaseStatus {
+  DETECTED
+  PENDING_REVIEW
+  CONFIRMED_FOR_ESCALATION
+  NOTIFICATION_QUEUED
+  DELIVERED
+  ACKNOWLEDGED
+  RESOLVED
+  ESCALATION_FAILED
+}
+
+model RiskAssessment {
+  id                   String        @id @default(uuid())
+  category             RiskCategory
+  confidenceScore      Float
+  matchedIndicators    String[]
+  safetyActionTaken    String
+  evaluatedAt          DateTime      @default(now())
+
+  evidences            RiskEvidence[]
+  safetyCases          SafetyCase[]
+}
+
+model RiskEvidence {
+  id                 String          @id @default(uuid())
+  riskAssessmentId   String
+  riskAssessment     RiskAssessment  @relation(fields: [riskAssessmentId], references: [id], onDelete: Cascade)
+  messageId          String?
+  message            ChatMessage?    @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  indicatorSnippet   String
+  confidence         Float
+
+  @@index([riskAssessmentId])
+}
+
+model SafetyCase {
+  id                   String             @id @default(uuid())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionId        String?
+  institution          Institution?       @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  riskAssessmentId     String?
+  riskAssessment       RiskAssessment?    @relation(fields: [riskAssessmentId], references: [id], onDelete: SetNull)
+  riskCategory         RiskCategory
+  status               SafetyCaseStatus   @default(PENDING_REVIEW)
+  escalationRequired   Boolean            @default(false)
+  detectedAt           DateTime           @default(now())
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  reviewerNotes        String?
+
+  reviews              SafetyReview[]
+  escalationDecisions  EscalationDecision[]
+  notifications        AlertNotification[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([institutionId])
+}
+
+model SafetyReview {
+  id            String     @id @default(uuid())
+  safetyCaseId  String
+  safetyCase    SafetyCase @relation(fields: [safetyCaseId], references: [id], onDelete: Cascade)
+  reviewerName  String
+  reviewerRole  String
+  decisionNotes String
+  newStatus     SafetyCaseStatus
+  timestamp     DateTime   @default(now())
+
+  @@index([safetyCaseId])
+}
+
+model EscalationDecision {
+  id            String     @id @default(uuid())
+  safetyCaseId  String
+  safetyCase    SafetyCase @relation(fields: [safetyCaseId], references: [id], onDelete: Cascade)
+  legalBasis    String     // "DOCUMENTED_USER_CONSENT" | "LAWFUL_IMMEDIATE_VITAL_INTEREST"
+  decisionMaker String
+  rationale     String
+  approvedAt    DateTime   @default(now())
+
+  @@index([safetyCaseId])
+}
+
+model AlertNotification {
+  id               String               @id @default(uuid())
+  safetyCaseId     String
+  safetyCase       SafetyCase           @relation(fields: [safetyCaseId], references: [id], onDelete: Cascade)
+  trustedContactId String
+  trustedContact   TrustedContact       @relation(fields: [trustedContactId], references: [id], onDelete: Cascade)
+  deliveryPolicy   String               @default("MINIMUM_NECESSARY_INFORMATION_ONLY")
+  messageBody      String
+  status           String               @default("QUEUED")
+  dispatchedAt     DateTime?
+
+  deliveries       NotificationDelivery[]
+
+  @@index([safetyCaseId])
+}
+
+model NotificationDelivery {
+  id                  String            @id @default(uuid())
+  alertNotificationId String
+  alertNotification   AlertNotification @relation(fields: [alertNotificationId], references: [id], onDelete: Cascade)
+  channel             String            // "SMS" | "WHATSAPP" | "EMAIL"
+  externalMessageId   String?
+  deliveryStatus      String            @default("PENDING")
+  attemptCount        Int               @default(1)
+  timestamp           DateTime          @default(now())
+
+  @@index([alertNotificationId])
+}
+
+// ----------------------------------------------------
+// THERAPISTS, APPOINTMENTS & CLINICAL NOTES
+// ----------------------------------------------------
+
+model TherapistProfile {
+  id                     String                    @id @default(uuid())
+  userId                 String                    @unique
+  user                   User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                  String
+  qualifications         String[]
+  licenseNumber          String                    @unique
+  isVerified             Boolean                   @default(false)
+  bio                    String
+  specializations        String[]
+  languages              String[]
+  sessionFee             Float                     @default(1500)
+  currency               String                    @default("INR")
+  sessionDurationMinutes Int                       @default(50)
+  rating                 Float                     @default(5.0)
+  reviewsCount           Int                       @default(0)
+
+  verifications          ProfessionalVerification[]
+  availabilities         TherapistAvailability[]
+  appointments           Appointment[]
+
+  @@index([licenseNumber])
+}
+
+model ProfessionalVerification {
+  id                 String           @id @default(uuid())
+  therapistProfileId String
+  therapistProfile   TherapistProfile @relation(fields: [therapistProfileId], references: [id], onDelete: Cascade)
+  issuingAuthority   String           // "RCI" | "MCI" | "NMC" | "APA"
+  documentUrl        String?
+  verifiedByAdminId  String?
+  isApproved         Boolean          @default(false)
+  verifiedAt         DateTime?
+
+  @@index([therapistProfileId])
+}
+
+model TherapistAvailability {
+  id                 String           @id @default(uuid())
+  therapistProfileId String
+  therapistProfile   TherapistProfile @relation(fields: [therapistProfileId], references: [id], onDelete: Cascade)
+  dayOfWeek          String           // "Monday", etc.
+  startTime          String           // "09:00"
+  endTime            String           // "17:00"
+  isAvailable        Boolean          @default(true)
+
+  @@index([therapistProfileId])
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum AppointmentType {
+  VIDEO
+  AUDIO
+  CHAT
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  userId             String
+  user               User              @relation("UserAppointments", fields: [userId], references: [id], onDelete: Cascade)
+  therapistProfileId String
+  therapistProfile   TherapistProfile  @relation(fields: [therapistProfileId], references: [id], onDelete: Cascade)
+  scheduledStart     DateTime
+  durationMinutes    Int               @default(50)
+  type               AppointmentType   @default(VIDEO)
+  status             AppointmentStatus @default(CONFIRMED)
+  fee                Float
+  isPaid             Boolean           @default(true)
+  meetingRoomId      String            @unique
+  createdAt          DateTime          @default(now())
+
+  consultationSession ConsultationSession?
+  clinicalNotes       ClinicalNote[]
+  payments            Payment[]
+
+  @@index([userId])
+  @@index([therapistProfileId])
+  @@index([scheduledStart])
+}
+
+model ConsultationSession {
+  id            String      @id @default(uuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  recordingUrl  String?     // null unless explicitly consented
+  isCompleted   Boolean     @default(false)
+}
+
+model ClinicalNote {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  authorId      String
+  noteEncrypted String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([appointmentId])
+}
+
+// ----------------------------------------------------
+// WELLNESS INTERVENTIONS & RECOMMENDATIONS
+// ----------------------------------------------------
+
+model WellnessActivity {
+  id               String               @id @default(uuid())
+  title            String
+  category         String               // "BREATHING" | "GROUNDING" | "SLEEP" | "COGNITIVE"
+  description      String
+  estimatedMinutes Int
+  difficulty       String               @default("Easy")
+  benefitSummary   String
+
+  completions      ActivityCompletion[]
+  recommendations  Recommendation[]
+}
+
+model ActivityCompletion {
+  id                 String           @id @default(uuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wellnessActivityId String
+  wellnessActivity   WellnessActivity @relation(fields: [wellnessActivityId], references: [id], onDelete: Cascade)
+  durationSeconds    Int
+  userFeedbackRating Int?
+  completedAt        DateTime         @default(now())
+
+  @@index([userId])
+}
+
+model Recommendation {
+  id                 String           @id @default(uuid())
+  userId             String
+  wellnessActivityId String
+  wellnessActivity   WellnessActivity @relation(fields: [wellnessActivityId], references: [id], onDelete: Cascade)
+  generatedReason    String
+  isViewed           Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// BILLING, PAYMENTS & AUDIT
+// ----------------------------------------------------
+
+model Subscription {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planTier       String    @default("FREE") // "FREE" | "PREMIUM_STUDENT" | "INSTITUTION_SPONSORED"
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  invoices       Invoice[]
+
+  @@index([userId])
+}
+
+model Payment {
+  id                 String      @id @default(uuid())
+  appointmentId      String?
+  appointment        Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  amount             Float
+  currency           String      @default("INR")
+  gatewayProvider    String      @default("STRIPE_RAZORPAY")
+  gatewayTxnId       String      @unique
+  paymentStatus      String      // "PAID" | "PENDING" | "FAILED" | "REFUNDED"
+  createdAt          DateTime    @default(now())
+
+  invoices           Invoice[]
+
+  @@index([gatewayTxnId])
+}
+
+model Invoice {
+  id             String        @id @default(uuid())
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  paymentId      String?
+  payment        Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  invoiceNumber  String        @unique
+  pdfUrl         String?
+  issuedAt       DateTime      @default(now())
+
+  @@index([invoiceNumber])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actorRole String
+  action    String
+  resource  String
+  details   String
+  ipAddress String?
+  timestamp DateTime @default(now())
+
+  @@index([action])
+  @@index([timestamp])
+}
+
+model DataDeletionRequest {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String   @default("LOGGED") // "LOGGED" | "PROCESSED" | "PURGED"
+  requestedAt DateTime @default(now())
+  purgedAt    DateTime?
+
+  @@index([userId])
+}
+
